@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ROS 2 Diff Drive + Camera</title>
+  <script src="https://cdn.jsdelivr.net/npm/roslib/build/roslib.min.js"></script>
+</head>
+
+<body>
+<h2>ROS 2 Diff Drive Control</h2>
+
+<button onclick="forward()">Forward</button>
+<button onclick="left()">Left</button>
+<button onclick="right()">Right</button>
+<button onclick="stop()">Stop</button>
+
+<h3>Camera Feed</h3>
+<img id="camera" width="400"/>
+
+<script>
+/* ---------- ROS CONNECTION ---------- */
+var ros = new ROSLIB.Ros({
+  url : 'ws://localhost:9090'
+});
+
+ros.on('connection', () => console.log("Connected to rosbridge"));
+ros.on('error', err => console.log("Error:", err));
+ros.on('close', () => console.log("Closed"));
+
+/* ---------- CMD_VEL PUBLISHER ---------- */
+var cmdVel = new ROSLIB.Topic({
+  ros : ros,
+  name : '/cmd_vel',
+  messageType : 'geometry_msgs/Twist'
+});
+
+/* ---------- CAMERA SUBSCRIBER ---------- */
+var imageTopic = new ROSLIB.Topic({
+  ros : ros,
+  name : '/camera/camera/image_raw/compressed',
+  messageType : 'sensor_msgs/CompressedImage'
+});
+
+imageTopic.subscribe(function(msg) {
+  document.getElementById('camera').src =
+    "data:image/jpeg;base64," + msg.data;
+});
+
+/* ---------- CONTROL FUNCTIONS ---------- */
+function forward() {
+  cmdVel.publish({
+    linear: {x: 0.3, y: 0, z: 0},
+    angular: {x: 0, y: 0, z: 0}
+  });
+}
+
+function left() {
+  cmdVel.publish({
+    linear: {x: 0.0, y: 0, z: 0},
+    angular: {x: 0, y: 0, z: 0.8}
+  });
+}
+
+function right() {
+  cmdVel.publish({
+    linear: {x: 0.0, y: 0, z: 0},
+    angular: {x: 0, y: 0, z: -0.8}
+  });
+}
+
+function stop() {
+  cmdVel.publish({
+    linear: {x: 0, y: 0, z: 0},
+    angular: {x: 0, y: 0, z: 0}
+  });
+}
+</script>
+</body>
+</html>
